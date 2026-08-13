@@ -5,6 +5,8 @@
 #define BOARD_SIZE 40
 #define MAX_NAME_LENGTH 50
 #define MAX_PROPERTIES 22
+#define MAX_RAILWAYS 4
+#define MAX_UTILITIES 2
 
 enum Strategy {
     AGGRESSIVE,
@@ -111,8 +113,8 @@ struct Player {
     int utility_count;
 
     int properties[MAX_PROPERTIES];
-    int railways[MAX_PROPERTIES];
-    int utilities[MAX_PROPERTIES];
+    int railways[MAX_RAILWAYS];
+    int utilities[MAX_UTILITIES];
 
     struct Loan loan;
     struct Insurance insurance;
@@ -126,8 +128,8 @@ struct Board {
     struct Space spaces[BOARD_SIZE];
 
     struct Property properties[MAX_PROPERTIES];
-    struct Railway railways[MAX_PROPERTIES];
-    struct Utility utilities[MAX_PROPERTIES];
+    struct Railway railways[MAX_RAILWAYS];
+    struct Utility utilities[MAX_UTILITIES];
 };
 
 struct Game {

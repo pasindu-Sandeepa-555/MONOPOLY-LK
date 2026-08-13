@@ -4,7 +4,7 @@
 #define MAX_PLAYERS 4
 #define BOARD_SIZE 40
 #define MAX_NAME_LENGTH 50
-#define MAX_PROPERTIES 28
+#define MAX_PROPERTIES 22
 
 enum Strategy {
     AGGRESSIVE,

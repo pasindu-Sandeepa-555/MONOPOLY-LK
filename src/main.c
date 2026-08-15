@@ -1,29 +1,32 @@
 #include <stdio.h>
-#include "../include/players.h"
-#include "../include/board.h"
 
+#include "../include/game.h"
 
 int main(void)
 {
-	struct Player players[MAX_PLAYERS];
-	struct Board board;
+    struct Game game;
 
-	initializePlayers(players);
-	initializeBoard(&board);
+    initializeGame(&game);
 
-	printf("MONOPOLY-LK\n");
-	printf("====================\n");
+    printf("MONOPOLY-LK\n");
+    printf("====================\n");
 
-	for (int i = 0; i < MAX_PLAYERS; i++) {
-		printPlayer(&players[i]);
+    determineTurnOrder(&game);
 
-	}
-	
-	printBoard(&board);;
+    printf("\n===== GAME START =====\n");
 
-	return 0;
+    for (int i = 0; i < 8; i++) {
+        playTurn(&game);
+    }
 
+    printf("\n===== GAME STATE =====\n");
+
+    for (int i = 0; i < MAX_PLAYERS; i++) {
+        printf("%s | Cash: LKR %d | Position: %d\n",
+               game.players[i].name,
+               game.players[i].cash,
+               game.players[i].position);
+    }
+
+    return 0;
 }
-
-
-

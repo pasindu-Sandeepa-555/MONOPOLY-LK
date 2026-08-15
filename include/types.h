@@ -5,8 +5,12 @@
 #define BOARD_SIZE 40
 #define MAX_NAME_LENGTH 50
 #define MAX_PROPERTIES 22
+
 #define MAX_RAILWAYS 4
 #define MAX_UTILITIES 2
+
+#define DICE_SIDES 6
+#define GO_REWARD 2000
 
 enum Strategy {
     AGGRESSIVE,
@@ -136,7 +140,9 @@ struct Game {
     struct Board board;
     struct Player players[MAX_PLAYERS];
 
+    int turn_order[MAX_PLAYERS];
     int current_player;
+
     int round;
 };
 

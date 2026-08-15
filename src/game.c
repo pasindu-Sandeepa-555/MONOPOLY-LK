@@ -139,6 +139,8 @@ void playTurn(struct Game *game)
 
     movePlayer(game, player_index, dice);
 
+    resolveLanding(game, player_index);
+
     game->current_player++;
 
     if (game->current_player >= MAX_PLAYERS) {
@@ -146,3 +148,70 @@ void playTurn(struct Game *game)
         game->round++;
     }
 }
+
+void resolveLanding(struct Game *game, int player_index)
+{
+    struct Player *player = &game->players[player_index];
+
+    int position = player->position;
+
+    struct Space *space = &game->board.spaces[position];
+
+    printf("\n%s landed on Square %d: %s\n",
+           player->name,
+           position,
+           space->name);
+
+    switch (space->type) {
+
+        case GO:
+            printf("This is GO.\n");
+            break;
+
+        case PROPERTY:
+            printf("This is a property.\n");
+            break;
+
+        case RAILWAY:
+            printf("This is a railway.\n");
+            break;
+
+        case UTILITY:
+            printf("This is a utility.\n");
+            break;
+
+        case TAX:
+            printf("This is a tax space.\n");
+            break;
+
+        case EVENT:
+            printf("This is an event space.\n");
+            break;
+
+        case JAIL:
+            printf("This is Jail / Just Visiting.\n");
+            break;
+
+        case GO_TO_JAIL:
+            printf("Go directly to Jail.\n");
+            player->position = 10;
+            break;
+
+        case FREE_PARKING:
+            printf("Free Parking.\n");
+            break;
+
+        case BANK:
+            printf("Bank space.\n");
+            break;
+
+        case INSURANCE:
+            printf("Insurance space.\n");
+            break;
+
+        default:
+            printf("Unknown space type.\n");
+            break;
+    }
+}
+

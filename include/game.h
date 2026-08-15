@@ -15,6 +15,6 @@ void movePlayer(struct Game *game, int player_index, int steps);
 
 void playTurn(struct Game *game);
 
-
+void resolveLanding(struct Game *game, int player_index);
 
 #endif

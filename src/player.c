@@ -32,6 +32,16 @@ void initializePlayers(struct Player players[MAX_PLAYERS])
         players[i].railway_count = 0;
         players[i].utility_count = 0;
 
+	for (int j = 0; j < MAX_PROPERTIES; j++) {
+		players[i].properties[j] = -1;
+	}
+	for (int j = 0; j < MAX_RAILWAYS; j++) {
+		players[i].railways[j] = -1;
+	}
+	for (int j = 0; j < MAX_UTILITIES; j++) {
+		players[i].railways[j] = -1;
+	}
+
         players[i].loan.active = 0;
         players[i].insurance.active = 0;
 

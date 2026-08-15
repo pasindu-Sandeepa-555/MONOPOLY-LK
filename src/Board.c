@@ -3,6 +3,11 @@
 
 #include "../include/board.h"
 
+static void initializeSpaces(struct Board *board);
+static void initializeProperties(struct Board *board);
+static void initializeRailways(struct Board *board);
+static void initializeUtilities(struct Board *board);
+
 static void initializeProperties(struct Board *board)
 {
     const char *names[MAX_PROPERTIES] = {
@@ -222,7 +227,10 @@ static void initializeSpaces(struct Board *board)
 void initializeBoard(struct Board *board)
 {
     initializeProperties(board);
+    initializeRailways(board);
+    initializeUtilities(board);
     initializeSpaces(board);
+
 }
 
 void printBoard(const struct Board *board)
@@ -237,4 +245,98 @@ void printBoard(const struct Board *board)
 
     printf("=================\n");
 }
+
+
+static void initializeRailways(struct Board *board)
+{
+	const char *names[MAX_RAILWAYS] = {
+		"Colombo Fort Railway Station",
+		"Kandy Railway Station",
+		"Galle Railway Station",
+		"Jaffna Railway Station"
+	};
+
+	for (int i = 0; i < MAX_RAILWAYS; i++) {
+		strcpy(board->railways[i].name, names[i]);
+
+		board->railways[i].price = 0;
+		board->railways[i].mortgage_value = 0;
+
+		board->railways[i].owner = -1;
+		board->railways[i].mortgage_value = 0;
+		board->railways[i].loan_locked = 0;
+	}
+}
+
+static void initializeUtilities(struct Board *board) 
+{
+	const char *names[MAX_UTILITIES] = {
+		"Celon Electricity Board",
+		"National Water Supply and Drainage Board"
+	};
+
+	for (int i = 0; i < MAX_UTILITIES; i++) {
+		strcpy(board->utilities[i].name, names[i]);
+
+		board->utilities[i].price = 0;
+		board->utilities[i].mortgage_value = 0;
+
+		board->utilities[i].owner = -1;
+		board->utilities[i].mortgaged = 0;
+		board->utilities[i].loan_locked = 0;
+	}
+}
+
+int calculateRailwayRent(const struct Board *board, int player_index)
+{
+	int count = 0;
+
+	for (int i = 0; i < MAX_RAILWAYS; i++) {
+		if (board->railways[i].owner == player_index) {
+			count++;
+		}
+	}
+
+	switch (count) {
+		case 1:
+			return 250;
+		case 2: 
+			return 500;
+		case 3:
+			return 1000;
+		case 4:
+			return 2000;
+		default:
+			return 0;
+		}
+}
+
+int calculateUtilityRent(
+		const struct Board *board,
+		int player_index,
+		int dice_value
+		)
+{
+	int count = 0;
+
+	for (int i = 0; i < MAX_UTILITIES; i++) {
+		if (board->utilities[i].owner == player_index) {
+			count++;
+		}
+	}
+
+		if (count == 1) {
+			return 4 * dice_value;
+		}
+
+		if (count == 2) {
+			return 10 * dice_value;
+		}
+
+		return 0;
+
+	} 
+
+
+
 

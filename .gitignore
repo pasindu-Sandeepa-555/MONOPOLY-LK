@@ -1,3 +1,5 @@
 monopoly
 *.o
 *.out
+*.swp
+*.swo

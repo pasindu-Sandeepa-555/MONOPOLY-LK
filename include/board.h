@@ -19,6 +19,16 @@ int buyUtility(struct Board *board, struct Player *player, int player_index, int
 
 int calculateUtilityRent(const struct Utility *utility, int utility_count, int dice_roll);
 
+int canBuildHouse(const struct Board *board, int player_index, int property_index);
+
+int buildHouse(struct Board *board, struct Player *player, int player_index, int property_index);
+
+int buildHotel(struct Board *board, struct Player *player, int player_index, int property_index);
+
+int ownsCompleteGroup(const struct Board *board, int player_index, int group);
+
+int canBuildHouse(const struct Board *board, int player_index, int property_index);
+
 
 #endif
 

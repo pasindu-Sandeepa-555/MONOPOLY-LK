@@ -17,4 +17,8 @@ void playTurn(struct Game *game);
 
 void resolveLanding(struct Game *game, int player_index);
 
+void developProperties(struct Game *game, int player_index);
+
+int gameHasEnded(const struct Game *game);
+
 #endif

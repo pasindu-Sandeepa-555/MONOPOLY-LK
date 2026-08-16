@@ -7,32 +7,27 @@ static void initializeSpaces(struct Board *board);
 static void initializeProperties(struct Board *board);
 static void initializeRailways(struct Board *board);
 static void initializeUtilities(struct Board *board);
+static int canBuildEvenly(const struct Board *board, int property_index);
 
 static void initializeProperties(struct Board *board)
 {
     const char *names[MAX_PROPERTIES] = {
-        "Pettah",
-        "Maradana",
-        "Bambalapitiya",
-        "Wellawatte",
-        "Mount Lavinia",
-        "Nugegoda",
-        "Maharagama",
-        "Kottawa",
-        "Negombo",
-        "Katunayake",
-        "Ja-Ela",
-        "Kandy City",
-        "Peradeniya",
-        "Katugastota",
-        "Galle Fort",
-        "Unawatuna",
-        "Hikkaduwa",
-        "Jaffna Town",
-        "Nallur",
-        "Trincomalee",
-        "Nuwara Eliya",
-        "Galle Face"
+        "Pettah", "Maradana", "Bambalapitiya", "Wellawatte", "Mount Lavinia",
+        "Nugegoda", "Maharagama", "Kottawa", "Negombo", "Katunayake",
+        "Ja-Ela", "Kandy City", "Peradeniya", "Katugastota", "Galle Fort",
+        "Unawatuna", "Hikkaduwa", "Jaffna Town", "Nallur", "Trincomalee",
+        "Nuwara Eliya", "Galle Face"
+    };
+
+    int groups[MAX_PROPERTIES] = {
+        1, 1,          /* Pettah, Maradana */
+        2, 2, 2,       /* Bambalapitiya, Wellawatte, Mount Lavinia */
+        3, 3, 3,       /* Nugegoda, Maharagama, Kottawa */
+        4, 4, 4,       /* Negombo, Katunayake, Ja-Ela */
+        5, 5, 5,       /* Kandy City, Peradeniya, Katugastota */
+        6, 6, 6,       /* Galle Fort, Unawatuna, Hikkaduwa */
+        7, 7, 7,       /* Jaffna Town, Nallur, Trincomalee */
+        8, 8           /* Nuwara Eliya, Galle Face */
     };
 
     for (int i = 0; i < MAX_PROPERTIES; i++) {
@@ -47,8 +42,7 @@ static void initializeProperties(struct Board *board)
             board->properties[i].price / 10;
 
         board->properties[i].owner = -1;
-
-        board->properties[i].group = i / 2;
+        board->properties[i].group = groups[i];
 
         board->properties[i].houses = 0;
         board->properties[i].hotel = 0;
@@ -67,12 +61,7 @@ static void initializeSpaces(struct Board *board)
 
         board->spaces[i].type = FREE_PARKING;
 
-        snprintf(
-            board->spaces[i].name,
-            MAX_NAME_LENGTH,
-            "Space %d",
-            i
-        );
+        snprintf(board->spaces[i].name, MAX_NAME_LENGTH, "Space %d", i);
     }
 
     strcpy(board->spaces[0].name, "GO");
@@ -230,7 +219,6 @@ void initializeBoard(struct Board *board)
     initializeRailways(board);
     initializeUtilities(board);
     initializeSpaces(board);
-
 }
 
 void printBoard(const struct Board *board)
@@ -238,66 +226,59 @@ void printBoard(const struct Board *board)
     printf("\n===== BOARD =====\n");
 
     for (int i = 0; i < BOARD_SIZE; i++) {
-        printf("%2d : %-35s\n",
-               i,
-               board->spaces[i].name);
+        printf("%2d : %-35s\n", i, board->spaces[i].name);
     }
 
     printf("=================\n");
 }
 
-
 static void initializeRailways(struct Board *board)
 {
-	const char *names[MAX_RAILWAYS] = {
-		"Colombo Fort Railway Station",
-		"Kandy Railway Station",
-		"Galle Railway Station",
-		"Jaffna Railway Station"
-	};
+    const char *names[MAX_RAILWAYS] = {
+        "Colombo Fort Railway Station",
+        "Kandy Railway Station",
+        "Galle Railway Station",
+        "Jaffna Railway Station"
+    };
 
-	for (int i = 0; i < MAX_RAILWAYS; i++) {
-		strcpy(board->railways[i].name, names[i]);
+    for (int i = 0; i < MAX_RAILWAYS; i++) {
+        strcpy(board->railways[i].name, names[i]);
 
-		board->railways[i].price = 1500;
-		board->railways[i].mortgage_value = 750;
-		board->railways[i].rent = 250;
+        board->railways[i].price = 1500;
+        board->railways[i].mortgage_value = 750;
+        board->railways[i].rent = 250;
 
-		board->railways[i].owner = -1;
-		board->railways[i].mortgage_value = 0;
-		board->railways[i].loan_locked = 0;
-	}
+        board->railways[i].owner = -1;
+        board->railways[i].mortgaged = 0;
+        board->railways[i].loan_locked = 0;
+    }
 }
 
-static void initializeUtilities(struct Board *board) 
+static void initializeUtilities(struct Board *board)
 {
-	const char *names[MAX_UTILITIES] = {
-		"Celon Electricity Board",
-		"National Water Supply and Drainage Board"
-	};
+    const char *names[MAX_UTILITIES] = {
+        "Ceylon Electricity Board",
+        "National Water Supply and Drainage Board"
+    };
 
-	for (int i = 0; i < MAX_UTILITIES; i++) {
-		strcpy(board->utilities[i].name, names[i]);
+    for (int i = 0; i < MAX_UTILITIES; i++) {
+        strcpy(board->utilities[i].name, names[i]);
 
-		board->utilities[i].price = 0;
-		board->utilities[i].mortgage_value = 0;
+        board->utilities[i].price = 1500;
+        board->utilities[i].mortgage_value = 750;
 
-		board->utilities[i].owner = -1;
-		board->utilities[i].mortgaged = 0;
-		board->utilities[i].loan_locked = 0;
-	}
+        board->utilities[i].owner = -1;
+        board->utilities[i].mortgaged = 0;
+        board->utilities[i].loan_locked = 0;
+    }
 }
-
-
-
 
 int buyProperty(struct Board *board,
                 struct Player *player,
                 int player_index,
                 int property_index)
 {
-    struct Property *property =
-        &board->properties[property_index];
+    struct Property *property = &board->properties[property_index];
 
     if (property->owner != -1) {
         return 0;
@@ -306,18 +287,15 @@ int buyProperty(struct Board *board,
     if (player->cash < property->price) {
         return 0;
     }
-    
+
     if (player->property_count >= MAX_PROPERTIES) {
-	    return 0;
+        return 0;
     }
 
     player->cash -= property->price;
-
     property->owner = player_index;
 
-    player->properties[player->property_count] =
-        property_index;
-
+    player->properties[player->property_count] = property_index;
     player->property_count++;
 
     return 1;
@@ -329,7 +307,173 @@ int calculatePropertyRent(const struct Property *property)
         return 0;
     }
 
-    return property->rent;
+    int multiplier = 1;
+
+    if (property->hotel > 0) {
+        multiplier = 10;
+    }
+    else {
+        switch (property->houses) {
+            case 0: multiplier = 1; break;
+            case 1: multiplier = 2; break;
+            case 2: multiplier = 3; break;
+            case 3: multiplier = 5; break;
+            case 4: multiplier = 7; break;
+        }
+    }
+
+    return property->rent * multiplier;
+}
+
+int ownsCompleteGroup(const struct Board *board,
+                      int player_index,
+                      int group)
+{
+    for (int i = 0; i < MAX_PROPERTIES; i++) {
+        if (board->properties[i].group == group &&
+            board->properties[i].owner != player_index) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+static int canBuildEvenly(const struct Board *board, int property_index)
+{
+    const struct Property *property = &board->properties[property_index];
+    int group = property->group;
+    int minimum = 999;
+
+    for (int i = 0; i < MAX_PROPERTIES; i++) {
+        if (board->properties[i].group == group) {
+            if (board->properties[i].houses < minimum) {
+                minimum = board->properties[i].houses;
+            }
+        }
+    }
+
+    return property->houses <= minimum;
+}
+
+int canBuildHouse(const struct Board *board,
+                  int player_index,
+                  int property_index)
+{
+    const struct Property *property = &board->properties[property_index];
+
+    /* Must own the property. */
+    if (property->owner != player_index) {
+        return 0;
+    }
+
+    /* Must own the complete colour group (Rule 8). */
+    if (!ownsCompleteGroup(board, player_index, property->group)) {
+        return 0;
+    }
+
+    /* Already has a hotel. */
+    if (property->hotel > 0) {
+        return 0;
+    }
+
+    /* Maximum four houses. */
+    if (property->houses >= 4) {
+        return 0;
+    }
+
+    /* Must build evenly across the group (Rule 9). */
+    if (!canBuildEvenly(board, property_index)) {
+        return 0;
+    }
+
+    return 1;
+}
+
+int buildHouse(struct Board *board,
+               struct Player *player,
+               int player_index,
+               int property_index)
+{
+    if (!canBuildHouse(board, player_index, property_index)) {
+        return 0;
+    }
+
+    struct Property *property = &board->properties[property_index];
+
+    int cost;
+
+    switch (property->group) {
+        case 1: cost = 500;  break;
+        case 2: cost = 750;  break;
+        case 3: cost = 1000; break;
+        case 4: cost = 1250; break;
+        case 5: cost = 1500; break;
+        case 6: cost = 2000; break;
+        case 7: cost = 2500; break;
+        case 8: cost = 3000; break;
+        default: return 0;
+    }
+
+    if (player->cash < cost) {
+        return 0;
+    }
+
+    player->cash -= cost;
+    property->houses++;
+
+    printf("%s constructed a house on %s.\n", player->name, property->name);
+    printf("Construction Cost: LKR %d\n", cost);
+
+    return 1;
+}
+
+int buildHotel(struct Board *board,
+               struct Player *player,
+               int player_index,
+               int property_index)
+{
+    struct Property *property = &board->properties[property_index];
+
+    if (property->owner != player_index) {
+        return 0;
+    }
+
+    if (property->houses != 4) {
+        return 0;
+    }
+
+    if (property->hotel > 0) {
+        return 0;
+    }
+
+    int cost;
+
+    switch (property->group) {
+        case 1: cost = 2000;  break;
+        case 2: cost = 3000;  break;
+        case 3: cost = 4000;  break;
+        case 4: cost = 5000;  break;
+        case 5: cost = 6000;  break;
+        case 6: cost = 8000;  break;
+        case 7: cost = 10000; break;
+        case 8: cost = 12000; break;
+        default: return 0;
+    }
+
+    if (player->cash < cost) {
+        return 0;
+    }
+
+    player->cash -= cost;
+
+    property->houses = 0;
+    property->hotel = 1;
+
+    printf("%s upgraded %s to a Hotel.\n", player->name, property->name);
+    printf("Hotel Construction Cost: LKR %d\n", cost);
+
+    return 1;
 }
 
 int buyRailway(struct Board *board,
@@ -337,8 +481,7 @@ int buyRailway(struct Board *board,
                int player_index,
                int railway_index)
 {
-    struct Railway *railway =
-        &board->railways[railway_index];
+    struct Railway *railway = &board->railways[railway_index];
 
     if (railway->owner != -1) {
         return 0;
@@ -348,17 +491,14 @@ int buyRailway(struct Board *board,
         return 0;
     }
 
-    if (player->railway_count >= MAX_PROPERTIES) {
+    if (player->railway_count >= MAX_RAILWAYS) {
         return 0;
     }
 
     player->cash -= railway->price;
-
     railway->owner = player_index;
 
-    player->railways[player->railway_count] =
-        railway_index;
-
+    player->railways[player->railway_count] = railway_index;
     player->railway_count++;
 
     return 1;
@@ -367,35 +507,25 @@ int buyRailway(struct Board *board,
 int calculateRailwayRent(const struct Railway *railway,
                          int railway_count)
 {
-	if (railway->mortgaged) {
-		return 0;
-	}
+    if (railway->mortgaged) {
+        return 0;
+    }
 
-	switch (railway_count) {
-
-		case 1:
-			return 250;
-		case 2:
-			return 500;
-		case 3:
-			return 1000;
-		case 4:
-			return 2000;
-		default:
-			return 0;
-	}
-
-
+    switch (railway_count) {
+        case 1: return 250;
+        case 2: return 500;
+        case 3: return 1000;
+        case 4: return 2000;
+        default: return 0;
+    }
 }
-
 
 int buyUtility(struct Board *board,
                struct Player *player,
                int player_index,
                int utility_index)
 {
-    struct Utility *utility =
-        &board->utilities[utility_index];
+    struct Utility *utility = &board->utilities[utility_index];
 
     if (utility->owner != -1) {
         return 0;
@@ -405,21 +535,18 @@ int buyUtility(struct Board *board,
         return 0;
     }
 
-    if (player->utility_count >= MAX_PROPERTIES) {
+    if (player->utility_count >= MAX_UTILITIES) {
         return 0;
     }
 
     player->cash -= utility->price;
-
     utility->owner = player_index;
 
-    player->utilities[player->utility_count] =
-        utility_index;
-
+    player->utilities[player->utility_count] = utility_index;
     player->utility_count++;
 
     return 1;
-} 
+}
 
 int calculateUtilityRent(const struct Utility *utility,
                          int utility_count,
@@ -430,7 +557,7 @@ int calculateUtilityRent(const struct Utility *utility,
     }
 
     if (utility_count == 1) {
-	    return dice_roll * 4;
+        return dice_roll * 4;
     }
 
     if (utility_count >= 2) {

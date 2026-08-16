@@ -94,14 +94,26 @@ void initializeEconomy(struct Economy *economy)
     economy->regional_card = REG_CARD_SOUTHERN_TOURISM_BOOM;
     economy->regional_rounds_remaining = 0;
 
+    for (int i = 0; i < MAX_PROPERTIES; i++) {
+        economy->boom_snapshot_price[i] = 0;
+        economy->boom_snapshot_mortgage[i] = 0;
+        economy->boom_snapshot_rent[i] = 0;
+
+        economy->decline_snapshot_price[i] = 0;
+        economy->decline_snapshot_mortgage[i] = 0;
+        economy->decline_snapshot_rent[i] = 0;
+
+        economy->regional_snapshot_price[i] = 0;
+        economy->regional_snapshot_rent[i] = 0;
+        economy->regional_snapshot_touched[i] = 0;
+    }
+
     for (int i = 0; i < NUM_NATIONAL_EVENTS; i++) {
         economy->event_deck[i] = i;
     }
     economy->event_deck_pos = 0;
 }
 
-/* Applies a percentage change (can be negative) to a property's price,
-   mortgage value and rent together. Simple integer math, no external libs. */
 static void adjustPropertyValue(struct Property *property, int percent)
 {
     property->price += (property->price * percent) / 100;
@@ -117,12 +129,22 @@ static void adjustPropertyRent(struct Property *property, int percent)
     if (property->rent < 10) property->rent = 10;
 }
 
+static void snapshotForRegionalCard(struct Game *game, int idx)
+{
+    if (!game->economy.regional_snapshot_touched[idx]) {
+        game->economy.regional_snapshot_price[idx] = game->board.properties[idx].price;
+        game->economy.regional_snapshot_rent[idx] = game->board.properties[idx].rent;
+        game->economy.regional_snapshot_touched[idx] = 1;
+    }
+}
+
 static void applyNationalEventEffect(struct Game *game, int player_index, enum NationalEvent card)
 {
     struct Player *player = &game->players[player_index];
 
     printf("National Event Card\n\n%s\n", nationalEventName(card));
 
+   
     switch (card) {
 
         case TAX_AMNESTY:
@@ -140,7 +162,9 @@ static void applyNationalEventEffect(struct Game *game, int player_index, enum N
         }
 
         case INTEREST_RATE_CUT:
-            game->economy.loan_interest_rate -= 2;
+         
+			       game->economy.loan_interest_rate -= 2;
+
             if (game->economy.loan_interest_rate < 1) game->economy.loan_interest_rate = 1;
             printf("Loan interest reduced by 2%%. New rate: %d%%\n",
                    game->economy.loan_interest_rate);
@@ -151,69 +175,6 @@ static void applyNationalEventEffect(struct Game *game, int player_index, enum N
             printf("Loan interest increased by 2%%. New rate: %d%%\n",
                    game->economy.loan_interest_rate);
             break;
-
-        case STOCK_MARKET_RISE:
-            for (int i = 0; i < MAX_PROPERTIES; i++) {
-                adjustPropertyValue(&game->board.properties[i], 10);
-            }
-            printf("All property values increase by 10%%.\n");
-            break;
-
-        case ECONOMIC_DOWNTURN:
-            for (int i = 0; i < MAX_PROPERTIES; i++) {
-                adjustPropertyValue(&game->board.properties[i], -15);
-            }
-            printf("Property values decrease by 15%%.\n");
-            break;
-
-        case HOUSING_SUBSIDY_EVENT:
-            printf("House construction cost reduced by 30%% for this player for 15 rounds.\n");
-            break;
-
-        case FUEL_SHORTAGE:
-            for (int i = 0; i < MAX_RAILWAYS; i++) {
-                game->board.railways[i].rent *= 2;
-            }
-            printf("Railway rent doubles for 5 rounds.\n");
-            break;
-
-        case FOREIGN_FUNDING:
-            for (int i = 0; i < MAX_PROPERTIES; i++) {
-                adjustPropertyValue(&game->board.properties[i], 15);
-            }
-            printf("Commercial property values increase by 15%%.\n");
-            break;
-
-	case PORT_EXPANSION:
-            for (int i = 0; i < MAX_RAILWAYS; i++) {
-                game->board.railways[i].price += game->board.railways[i].price / 5;
-            }
-            printf("Railway station values increase by 20%%.\n");
-            break;
-
-       
-        case FESTIVAL_SEASON:
-            printf("Hotels receive 50%% additional rent for this player for 15 rounds.\n");
-            break;
-
-        case INSURANCE_DISCOUNT:
-            printf("Insurance premiums reduced by 20%% for 15 rounds.\n");
-            break;
-
-        case CURRENCY_DEPRECIATION:
-            printf("Construction costs increase by 10%%.\n");
-            break;
-
-        case PROPERTY_REVALUATION: {
-            int group = 1 + (rand() % 8);
-            for (int i = 0; i < MAX_PROPERTIES; i++) {
-                if (game->board.properties[i].group == group) {
-                    adjustPropertyValue(&game->board.properties[i], 15);
-                }
-            }
-            printf("Property group %d appreciates by 15%%.\n", group);
-            break;
-        }
 
         case HEAVY_FLOODS:
         case NATIONAL_DISASTER: {
@@ -231,6 +192,46 @@ static void applyNationalEventEffect(struct Game *game, int player_index, enum N
             }
             break;
         }
+
+        case STOCK_MARKET_RISE:
+            printf("All property values increase by 10%% for this player's holdings.\n");
+            break;
+
+        case ECONOMIC_DOWNTURN:
+            printf("Property values decrease by 15%% for this player's holdings.\n");
+            break;
+
+        case FUEL_SHORTAGE:
+            printf("Railway rent doubles for this player for 5 rounds.\n");
+            break;
+
+        case FOREIGN_FUNDING:
+            printf("Commercial property values increase by 15%% for this player's holdings.\n");
+            break;
+
+        case PORT_EXPANSION:
+            printf("Railway station values increase by 20%% for this player's holdings.\n");
+            break;
+
+        case PROPERTY_REVALUATION:
+            printf("A random property group this player owns into appreciates by 15%%.\n");
+            break;
+
+        case HOUSING_SUBSIDY_EVENT:
+            printf("House construction cost reduced by 30%% for this player for 15 rounds.\n");
+            break;
+
+        case FESTIVAL_SEASON:
+            printf("Hotels receive 50%% additional rent for this player for 15 rounds.\n");
+            break;
+
+        case INSURANCE_DISCOUNT:
+            printf("Insurance premiums reduced by 20%% for this player for 15 rounds.\n");
+            break;
+
+        case CURRENCY_DEPRECIATION:
+            printf("Construction costs increase by 10%% for this player.\n");
+            break;
 
         case POLITICAL_RALLY:
             printf("A random property is closed for 2 rounds. (Effect tracked qualitatively.)\n");
@@ -295,6 +296,24 @@ static void triggerMarketReview(struct Game *game)
         decline_group = 1 + (rand() % 8);
     } while (decline_group == boom_group);
 
+    /* Snapshot pre-boom / pre-decline values so they can be restored
+       exactly when the 10-round window ends (Rule-LK 31/32). */
+    for (int i = 0; i < MAX_PROPERTIES; i++) {
+        struct Property *p = &game->board.properties[i];
+
+        if (p->group == boom_group) {
+            game->economy.boom_snapshot_price[i] = p->price;
+            game->economy.boom_snapshot_mortgage[i] = p->mortgage_value;
+            game->economy.boom_snapshot_rent[i] = p->rent;
+        }
+
+        if (p->group == decline_group) {
+            game->economy.decline_snapshot_price[i] = p->price;
+            game->economy.decline_snapshot_mortgage[i] = p->mortgage_value;
+            game->economy.decline_snapshot_rent[i] = p->rent;
+        }
+    }
+
     game->economy.boom_group = boom_group;
     game->economy.boom_rounds_remaining = 10;
 
@@ -318,58 +337,45 @@ static void triggerMarketReview(struct Game *game)
            boom_group, decline_group);
 }
 
-static void triggerGovernmentRegulation(struct Game *game)
+static void revertMarketBoom(struct Game *game, int group)
 {
-    enum Regulation reg = (enum Regulation)(rand() % NUM_REGULATIONS);
-
-    printf("Government Regulation\n\n%s Introduced.\n", regulationName(reg));
-
-    switch (reg) {
-        case REG_REDUCE_LOAN_INTEREST:
-            game->economy.loan_interest_rate -= 2;
-            if (game->economy.loan_interest_rate < 1) game->economy.loan_interest_rate = 1;
-            printf("Loan interest reduced by 2%%. New rate: %d%%\n",
-                   game->economy.loan_interest_rate);
-            break;
-
-        case REG_HOUSING_SUBSIDY:
-            printf("House construction costs reduced by 30%%.\n");
-            break;
-
-        case REG_RAILWAY_MODERNIZATION:
-            for (int i = 0; i < MAX_RAILWAYS; i++) {
-                game->board.railways[i].rent += game->board.railways[i].rent / 4;
-            }
-            printf("Railway rents increase by 25%%.\n");
-            break;
-
-        case REG_INCREASE_PROPERTY_TAX:
-            printf("Income Tax increases by 50%%.\n");
-            break;
-
-        case REG_LUXURY_PROPERTY_TAX:
-            printf("Hotels incur an annual maintenance tax of 25%% of property value.\n");
-            break;
-
-        case REG_ELECTRICITY_TARIFF_REVISION:
-            printf("Utility rents increase by 20%%.\n");
-            break;
-
-        case REG_INSURANCE_REGULATION:
-            printf("Insurance premiums decrease by 15%%. Coverage unchanged.\n");
-            break;
-
-        case REG_ANTI_SPECULATION_ACT:
-            printf("Players may own at most three undeveloped properties.\n");
-            break;
+    for (int i = 0; i < MAX_PROPERTIES; i++) {
+        if (game->board.properties[i].group == group) {
+            game->board.properties[i].price = game->economy.boom_snapshot_price[i];
+            game->board.properties[i].mortgage_value = game->economy.boom_snapshot_mortgage[i];
+            game->board.properties[i].rent = game->economy.boom_snapshot_rent[i];
+        }
     }
+    printf("Market Boom on Group %d has ended. Values reverted to pre-boom levels.\n\n", group);
+}
 
-    printf("\n");
+static void revertMarketDecline(struct Game *game, int group)
+{
+    for (int i = 0; i < MAX_PROPERTIES; i++) {
+        if (game->board.properties[i].group == group) {
+            game->board.properties[i].price = game->economy.decline_snapshot_price[i];
+            game->board.properties[i].mortgage_value = game->economy.decline_snapshot_mortgage[i];
+            game->board.properties[i].rent = game->economy.decline_snapshot_rent[i];
+        }
+    }
+    printf("Market Decline on Group %d has ended. Values reverted to pre-decline levels.\n\n", group);
+}
+
+static void revertRegionalCard(struct Game *game)
+{
+    for (int i = 0; i < MAX_PROPERTIES; i++) {
+        if (game->economy.regional_snapshot_touched[i]) {
+            game->board.properties[i].price = game->economy.regional_snapshot_price[i];
+            game->board.properties[i].rent = game->economy.regional_snapshot_rent[i];
+            game->economy.regional_snapshot_touched[i] = 0;
+        }
+    }
+    printf("Regional Development period has ended. Affected property values reverted.\n\n");
 }
 
 static void triggerEconomicEvent(struct Game *game)
 {
-    enum EconomicEvent evt = (enum EconomicEvent)(rand() % NUM_ECONOMIC_EVENTS);
+        enum EconomicEvent evt = (enum EconomicEvent)(rand() % NUM_ECONOMIC_EVENTS);
 
     printf("Economic Event\n\n%s\n", economicEventName(evt));
 
@@ -426,10 +432,61 @@ static void triggerEconomicEvent(struct Game *game)
     printf("\n");
 }
 
-/* Property index groups matching Table 4, using the fixed ordering
-   already used in initializeProperties() in board.c */
+static void triggerGovernmentRegulation(struct Game *game)
+{
+    enum Regulation reg = (enum Regulation)(rand() % NUM_REGULATIONS);
+
+    printf("Government Regulation\n\n%s Introduced.\n", regulationName(reg));
+
+    switch (reg) {
+        case REG_REDUCE_LOAN_INTEREST:
+            game->economy.loan_interest_rate -= 2;
+            if (game->economy.loan_interest_rate < 1) game->economy.loan_interest_rate = 1;
+            printf("Loan interest reduced by 2%%. New rate: %d%%\n",
+                   game->economy.loan_interest_rate);
+            break;
+
+        case REG_HOUSING_SUBSIDY:
+            printf("House construction costs reduced by 30%%.\n");
+            break;
+
+        case REG_RAILWAY_MODERNIZATION:
+            for (int i = 0; i < MAX_RAILWAYS; i++) {
+                game->board.railways[i].rent += game->board.railways[i].rent / 4;
+            }
+            printf("Railway rents increase by 25%%.\n");
+            break;
+
+        case REG_INCREASE_PROPERTY_TAX:
+            printf("Income Tax increases by 50%%.\n");
+            break;
+
+        case REG_LUXURY_PROPERTY_TAX:
+            printf("Hotels incur an annual maintenance tax of 25%% of property value.\n");
+            break;
+
+        case REG_ELECTRICITY_TARIFF_REVISION:
+            printf("Utility rents increase by 20%%.\n");
+            break;
+
+        case REG_INSURANCE_REGULATION:
+            printf("Insurance premiums decrease by 15%%. Coverage unchanged.\n");
+            break;
+
+        case REG_ANTI_SPECULATION_ACT:
+            printf("Players may own at most three undeveloped properties.\n");
+            break;
+    }
+
+    printf("\n");
+}
+
 static void triggerRegionalDevelopmentCard(struct Game *game)
 {
+    for (int i = 0; i < MAX_PROPERTIES; i++) {
+        game->economy.regional_snapshot_touched[i] = 0;
+    }
+
     enum RegionalCard card = (enum RegionalCard)(rand() % NUM_REGIONAL_CARDS);
 
     game->economy.has_regional_card = 1;
@@ -440,48 +497,72 @@ static void triggerRegionalDevelopmentCard(struct Game *game)
 
     switch (card) {
         case REG_CARD_SOUTHERN_TOURISM_BOOM: /* Galle Fort(14) Unawatuna(15) Hikkaduwa(16) */
-            for (int i = 14; i <= 16; i++) adjustPropertyRent(&game->board.properties[i], 40);
+            for (int i = 14; i <= 16; i++) {
+                snapshotForRegionalCard(game, i);
+                adjustPropertyRent(&game->board.properties[i], 40);
+            }
             printf("Galle Fort, Unawatuna and Hikkaduwa rental income +40%%\n");
             break;
 
         case REG_CARD_PORT_CITY_EXPANSION: /* Pettah(0) Maradana(1) */
-            for (int i = 0; i <= 1; i++) adjustPropertyValue(&game->board.properties[i], 25);
+            for (int i = 0; i <= 1; i++) {
+                snapshotForRegionalCard(game, i);
+                adjustPropertyValue(&game->board.properties[i], 25);
+            }
             printf("Pettah and Maradana values +25%%\n");
             break;
 
         case REG_CARD_IT_INDUSTRY_GROWTH: /* Nugegoda(5) Maharagama(6) Kottawa(7) */
-            for (int i = 5; i <= 7; i++) adjustPropertyValue(&game->board.properties[i], 20);
+            for (int i = 5; i <= 7; i++) {
+                snapshotForRegionalCard(game, i);
+                adjustPropertyValue(&game->board.properties[i], 20);
+            }
             printf("Maharagama, Nugegoda and Kottawa values +20%%\n");
             break;
 
         case REG_CARD_NORTHERN_DEVELOPMENT: /* Jaffna Town(17) Nallur(18) Trincomalee(19) */
-            for (int i = 17; i <= 19; i++) adjustPropertyValue(&game->board.properties[i], 30);
+            for (int i = 17; i <= 19; i++) {
+                snapshotForRegionalCard(game, i);
+                adjustPropertyValue(&game->board.properties[i], 30);
+            }
             printf("Jaffna Town, Nallur and Trincomalee values +30%%\n");
             break;
 
         case REG_CARD_TEA_EXPORT_BOOM: /* Nuwara Eliya(20) */
+            snapshotForRegionalCard(game, 20);
             adjustPropertyValue(&game->board.properties[20], 35);
             printf("Nuwara Eliya value +35%%\n");
             break;
 
         case REG_CARD_AIRPORT_EXPANSION: /* Negombo(8) Katunayake(9) Ja-Ela(10) */
-            for (int i = 8; i <= 10; i++) adjustPropertyRent(&game->board.properties[i], 30);
+            for (int i = 8; i <= 10; i++) {
+                snapshotForRegionalCard(game, i);
+                adjustPropertyRent(&game->board.properties[i], 30);
+            }
             printf("Negombo, Katunayake and Ja-Ela rents +30%%\n");
             break;
 
-        case REG_CARD_UNIVERSITY_CITY_GROWTH: /* Peradeniya(12) Kandy City(11) */
+        case REG_CARD_UNIVERSITY_CITY_GROWTH: /* Kandy City(11) Peradeniya(12) */
+            snapshotForRegionalCard(game, 11);
             adjustPropertyValue(&game->board.properties[11], 20);
+            snapshotForRegionalCard(game, 12);
             adjustPropertyValue(&game->board.properties[12], 20);
             printf("Peradeniya and Kandy City values +20%%\n");
             break;
 
         case REG_CARD_BEACH_POLLUTION: /* Galle Fort(14) Unawatuna(15) Hikkaduwa(16) */
-            for (int i = 14; i <= 16; i++) adjustPropertyRent(&game->board.properties[i], -30);
+            for (int i = 14; i <= 16; i++) {
+                snapshotForRegionalCard(game, i);
+                adjustPropertyRent(&game->board.properties[i], -30);
+            }
             printf("Southern coastal rents -30%%\n");
             break;
 
         case REG_CARD_FLOOD_DAMAGE: /* Negombo(8) Katunayake(9) Ja-Ela(10) as low-lying coastal */
-            for (int i = 8; i <= 10; i++) adjustPropertyValue(&game->board.properties[i], -20);
+            for (int i = 8; i <= 10; i++) {
+                snapshotForRegionalCard(game, i);
+                adjustPropertyValue(&game->board.properties[i], -20);
+            }
             printf("Low-lying coastal properties lose 20%% value\n");
             break;
 
@@ -586,17 +667,26 @@ void runEconomicSystems(struct Game *game)
 
     if (game->economy.boom_rounds_remaining > 0) {
         game->economy.boom_rounds_remaining--;
-        if (game->economy.boom_rounds_remaining == 0) game->economy.boom_group = -1;
+        if (game->economy.boom_rounds_remaining == 0) {
+            revertMarketBoom(game, game->economy.boom_group);
+            game->economy.boom_group = -1;
+        }
     }
 
     if (game->economy.decline_rounds_remaining > 0) {
         game->economy.decline_rounds_remaining--;
-        if (game->economy.decline_rounds_remaining == 0) game->economy.decline_group = -1;
+        if (game->economy.decline_rounds_remaining == 0) {
+            revertMarketDecline(game, game->economy.decline_group);
+            game->economy.decline_group = -1;
+        }
     }
 
     if (game->economy.regional_rounds_remaining > 0) {
         game->economy.regional_rounds_remaining--;
-        if (game->economy.regional_rounds_remaining == 0) game->economy.has_regional_card = 0;
+        if (game->economy.regional_rounds_remaining == 0) {
+            revertRegionalCard(game);
+            game->economy.has_regional_card = 0;
+        }
     }
 
     if (game->round % 10 == 0) {

@@ -220,23 +220,31 @@ struct Board {
 };
 
 struct Economy {
-    int inflation_rate;              
-    int loan_interest_rate;          
+    int inflation_rate;             
+    int loan_interest_rate;         
 
-    int boom_group;                  
+    int boom_group;                 
     int boom_rounds_remaining;
+    int boom_snapshot_price[MAX_PROPERTIES];
+    int boom_snapshot_mortgage[MAX_PROPERTIES];
+    int boom_snapshot_rent[MAX_PROPERTIES];
 
-    int decline_group;               
+    int decline_group;             
     int decline_rounds_remaining;
+    int decline_snapshot_price[MAX_PROPERTIES];
+    int decline_snapshot_mortgage[MAX_PROPERTIES];
+    int decline_snapshot_rent[MAX_PROPERTIES];
 
     int has_regional_card;
     enum RegionalCard regional_card;
     int regional_rounds_remaining;
+    int regional_snapshot_price[MAX_PROPERTIES];
+    int regional_snapshot_rent[MAX_PROPERTIES];
+    int regional_snapshot_touched[MAX_PROPERTIES];
 
     int event_deck[NUM_NATIONAL_EVENTS];
     int event_deck_pos;
 };
-
 struct Game {
     struct Board board;
     struct Player players[MAX_PLAYERS];

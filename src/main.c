@@ -1,6 +1,9 @@
 #include <stdio.h>
 
 #include "../include/game.h"
+#include "../include/players.h"
+#include "../include/board.h"
+#include "../include/finance.h"
 
 int main(void)
 {
@@ -16,7 +19,9 @@ int main(void)
     printf("\n===== GAME START =====\n");
 
     for (int i = 0; i < 8; i++) {
-        playTurn(&game);
+
+        
+	    playTurn(&game);
     }
 
     printf("\n===== GAME STATE =====\n");

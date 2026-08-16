@@ -38,6 +38,14 @@ enum SpaceType {
     INSURANCE
 };
 
+enum InsuranceType {
+	NO_INSURANCE,
+	BASIC_INSURANCE,
+	COMPREHENSIVE_INSURANCE,
+	BUSINESS_INTERRUPTION
+
+};
+
 struct Loan {
     int active;
     int principal;
@@ -47,7 +55,7 @@ struct Loan {
 
 struct Insurance {
     int active;
-    int type;
+    enum InsuranceType type;
     int premium;
     int claim;
     int rounds_remaining;

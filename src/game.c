@@ -154,6 +154,7 @@ void playTurn(struct Game *game)
 	printf("\n===== ROUND %d COMPLETE =====\n" , game->round);
 
 	updateLoans(game);
+	updateInsurance(game);
 
         game->round++;
     }
@@ -351,9 +352,7 @@ void resolveLanding(struct Game *game, int player_index)
 	
 	case TAX:
 	{
-	    int tax = 2000;
-
-	    payTax(player, tax);
+	    payTax(player, INCOME_TAX);
 
 	    break;
 	}
@@ -371,18 +370,58 @@ void resolveLanding(struct Game *game, int player_index)
         case FREE_PARKING:
             printf("Free Parking.\n");
             break;
+	
 
-        case BANK:
-            printf("Bank space.\n");
-            break;
+	case BANK:
+	{
+	    printf("Bank of Ceylon.\n");
 
-        case INSURANCE:
-            printf("Insurance space.\n");
-            break;
+	    if (player->loan.active) {
 
-        default:
-            printf("Unknown space type.\n");
-            break;
-    }
-}
+	        printf("%s has an active loan.\n", player->name);
+
+	        printf("Outstanding loan: LKR %d\n", player->loan.principal + player->loan.interest);
+
+	        if (player->cash > player->loan.principal + player->loan.interest) {
+
+	            repayLoan(player, player->loan.principal + player->loan.interest);
+	        }
+	    }
+	    else {
+	
+	        /*
+	         * Temporary autonomous borrowing decision.
+	         * Later this will depend on player strategy
+	         * and available collateral.
+	         */
+	        printf("%s has no active loan.\n",
+	               player->name);
+	    }
+
+	    break;
+	}
+
+
+	case INSURANCE:
+	{
+	    printf("This is an insurance space.\n");
+
+	    if (player->insurance.active) {
+
+		    printf("%s already has active insurance. \n", player->name);
+
+	    } else {
+
+	        printf("%s  can purchase insurance.\n", player->name);
+	    }
+
+	    break;
+	}
+
+       
+	        default:
+	            printf("Unknown space type.\n");
+	            break;
+	    }
+	}
 

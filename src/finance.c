@@ -16,8 +16,8 @@ int takeLoan(struct Player *player, int amount)
 
     player->loan.active = 1;
     player->loan.principal = amount;
-    player->loan.interest = amount * 10 / 100;
-    player->loan.rounds_remaining = 20;
+    player->loan.interest = 0;
+    player->loan.rounds_remaining = LOAN_DURATION;
 
     player->cash += amount;
 
@@ -25,11 +25,8 @@ int takeLoan(struct Player *player, int amount)
            player->name,
            amount);
 
-    printf("Interest: LKR %d\n",
-           player->loan.interest);
-
-    printf("Rounds remaining: %d\n",
-           player->loan.rounds_remaining);
+    printf("Loan duration: %d rounds\n",
+           LOAN_DURATION);
 
     return 1;
 }
@@ -38,7 +35,8 @@ int takeLoan(struct Player *player, int amount)
 int repayLoan(struct Player *player, int amount)
 {
     if (!player->loan.active) {
-        printf("%s has no active loan.\n", player->name);
+        printf("%s has no active loan.\n",
+               player->name);
         return 0;
     }
 
@@ -46,7 +44,9 @@ int repayLoan(struct Player *player, int amount)
         return 0;
     }
 
-    int total = player->loan.principal + player->loan.interest;
+    int total =
+        player->loan.principal +
+        player->loan.interest;
 
     if (amount > total) {
         amount = total;
@@ -60,73 +60,62 @@ int repayLoan(struct Player *player, int amount)
 
     player->cash -= amount;
 
+    /* Interest is paid before principal. */
     if (amount >= player->loan.interest) {
+
         amount -= player->loan.interest;
         player->loan.interest = 0;
+
         player->loan.principal -= amount;
-    } else {
+    }
+    else {
         player->loan.interest -= amount;
     }
 
     if (player->loan.principal == 0 &&
         player->loan.interest == 0) {
 
-        printf("%s fully repaid the loan.\n",
-               player->name);
-
         player->loan.active = 0;
         player->loan.rounds_remaining = 0;
+
+        printf("%s fully repaid the loan.\n",
+               player->name);
+    }
+    else {
+        printf("%s made a loan repayment.\n",
+               player->name);
+
+        printf("Outstanding loan: LKR %d\n",
+               player->loan.principal +
+               player->loan.interest);
     }
 
     return 1;
 }
 
 
-
-
-int payTax(struct Player *player, int amount)
-{
-    if (amount <= 0) {
-        return 0;
-    }
-
-    if (player->cash >= amount) {
-
-
-	    printf("%s pays LKR %d in tax.\n", player->name, amount);
-
-	    player->cash -= amount;
-	    
-
-	    return 1;
-    }
-
-    player->taxes_due += amount;
-    printf("%s cannot pay LKR %d tac.\n", player->name, amount);
-
-    return 0;
-
-}
-
-
-
 void updateLoans(struct Game *game)
 {
     for (int i = 0; i < MAX_PLAYERS; i++) {
 
-        struct Player *player = &game->players[i];
+        struct Player *player =
+            &game->players[i];
 
         if (!player->loan.active) {
             continue;
         }
 
-        /*
-         * Stable Economy = 8% annual interest.
-         * We use a simple round-based approximation here.
-         */
-        int outstanding = player->loan.principal + player->loan.interest;
+        int outstanding =
+            player->loan.principal +
+            player->loan.interest;
 
-        int interest = (outstanding * 8) / 100;
+        /*
+         * Current loan interest rate = 8%.
+         * Interest is compounded after every
+         * complete round.
+         */
+        int interest =
+            (outstanding * LOAN_INTEREST_RATE) / 100;
 
         player->loan.interest += interest;
 
@@ -145,18 +134,56 @@ void updateLoans(struct Game *game)
             printf("%s's loan has reached maturity.\n",
                    player->name);
 
+            /*
+             * Full foreclosure system can be
+             * implemented later.
+             */
             printf("Loan default/foreclosure must be processed.\n");
         }
     }
 }
 
-int buyInsurance(struct Player *player,  /*study from here */
+
+int payTax(struct Player *player, int amount)
+{
+    if (amount <= 0) {
+        return 0;
+    }
+
+    if (player->cash >= amount) {
+
+        printf("%s pays LKR %d in tax.\n",
+               player->name,
+               amount);
+
+        player->cash -= amount;
+
+        return 1;
+    }
+
+    /*
+     * Player cannot immediately pay.
+     * Record the unpaid tax.
+     */
+    player->taxes_due += amount;
+
+    printf("%s cannot pay LKR %d in tax.\n",
+           player->name,
+           amount);
+
+    return 0;
+}
+
+
+int buyInsurance(struct Player *player,
                  enum InsuranceType type,
                  int property_value)
 {
     if (player->insurance.active) {
+
         printf("%s already has insurance.\n",
                player->name);
+
         return 0;
     }
 
@@ -227,33 +254,42 @@ void updateInsurance(struct Game *game)
         if (player->insurance.rounds_remaining <= 3 &&
             player->insurance.rounds_remaining > 0) {
 
-            printf("Insurance reminder: %s's policy expires in %d rounds.\n",
-                   player->name,
-                   player->insurance.rounds_remaining);
+            printf(
+                "Insurance reminder: %s's policy expires in %d rounds.\n",
+                player->name,
+                player->insurance.rounds_remaining
+            );
         }
 
-        if (player->insurance.rounds_remaining == 0) {
+        if (player->insurance.rounds_remaining <= 0) {
 
             printf("%s's insurance policy has expired.\n",
                    player->name);
 
             player->insurance.active = 0;
-            player->insurance.type = NO_INSURANCE;                    
+            player->insurance.type = NO_INSURANCE;
+            player->insurance.premium = 0;
+            player->insurance.claim = 0;
+            player->insurance.rounds_remaining = 0;
         }
     }
-}     /*study untill this*/
+}
 
-void processInsuranceClaim(struct Player *player, enum InsuranceType type) 
+
+void processInsuranceClaim(struct Player *player,
+                           enum InsuranceType type)
 {
-	if (!player->insurance.active) {
-		return;
-	}
+    if (!player->insurance.active) {
+        return;
+    }
 
-	if (player->insurance.type != type) {
-		return;
-	}
+    if (player->insurance.type != type) {
+        return;
+    }
 
-	player->insurance.claim = 1;
+    player->insurance.claim = 1;
+    player->insurance_claims++;
 
-	printf("%s insurance claim activated. \n" , player->name);
+    printf("%s insurance claim activated.\n",
+           player->name);
 }

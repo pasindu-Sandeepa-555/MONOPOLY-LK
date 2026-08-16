@@ -260,7 +260,8 @@ static void initializeRailways(struct Board *board)
 		strcpy(board->railways[i].name, names[i]);
 
 		board->railways[i].price = 1500;
-		board->railways[i].mortgage_value = 0;
+		board->railways[i].mortgage_value = 750;
+		board->railways[i].rent = 250;
 
 		board->railways[i].owner = -1;
 		board->railways[i].mortgage_value = 0;
@@ -366,27 +367,25 @@ int buyRailway(struct Board *board,
 int calculateRailwayRent(const struct Railway *railway,
                          int railway_count)
 {
-    if (railway->mortgaged) {
-        return 0;
-    }
+	if (railway->mortgaged) {
+		return 0;
+	}
 
-    if (railway_count == 1) {
-        return railway->rent;
-    }
+	switch (railway_count) {
 
-    if (railway_count == 2) {
-        return railway->rent * 2;
-    }
+		case 1:
+			return 250;
+		case 2:
+			return 500;
+		case 3:
+			return 1000;
+		case 4:
+			return 2000;
+		default:
+			return 0;
+	}
 
-    if (railway_count == 3) {
-        return railway->rent * 4;
-    }
 
-    if (railway_count >= 4) {
-        return railway->rent * 8;
-    }
-
-    return 0;
 }
 
 
@@ -426,7 +425,7 @@ int calculateUtilityRent(const struct Utility *utility,
                          int utility_count,
                          int dice_roll)
 {
-    if (utility->owner == -1 ) {
+    if (utility->mortgaged) {
         return 0;
     }
 
@@ -438,5 +437,5 @@ int calculateUtilityRent(const struct Utility *utility,
         return dice_roll * 10;
     }
 
-    return dice_roll * 4;
+    return 0;
 }

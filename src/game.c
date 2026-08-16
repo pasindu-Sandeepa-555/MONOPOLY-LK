@@ -6,6 +6,8 @@
 #include "../include/players.h"
 #include "../include/board.h"
 
+#include "../include/finance.h"
+
 int rollDie(void)
 {
     return (rand() % DICE_SIDES) + 1;
@@ -135,6 +137,8 @@ void playTurn(struct Game *game)
 
     int dice = rollTwoDice();
 
+    game->last_dice_roll = dice;
+
     printf("Rolled: %d\n", dice);
 
     movePlayer(game, player_index, dice);
@@ -144,7 +148,13 @@ void playTurn(struct Game *game)
     game->current_player++;
 
     if (game->current_player >= MAX_PLAYERS) {
-        game->current_player = 0;
+        
+	game->current_player = 0;
+	
+	printf("\n===== ROUND %d COMPLETE =====\n" , game->round);
+
+	updateLoans(game);
+
         game->round++;
     }
 }
@@ -169,24 +179,185 @@ void resolveLanding(struct Game *game, int player_index)
             break;
 
         case PROPERTY:
-            printf("This is a property.\n");
-            break;
 
-        case RAILWAY:
-            printf("This is a railway.\n");
-            break;
+	    int property_index = space->property_index;
 
+	    struct Property *property =
+   	    &game->board.properties[property_index];
+
+	    if (property->owner == -1) {
+
+   	    printf("Property is unowned.\n");
+   	    printf("Price: LKR %d\n", property->price);
+
+   	    if (player->cash >= property->price) {
+
+ 	    printf("%s buys %s for LKR %d.\n",
+               player->name,
+               property->name,
+               property->price);
+
+            buyProperty(&game->board,
+                    player,
+                    player_index,
+                    property_index);
+            }
+   	    else {
+       		 printf("%s cannot afford this property.\n",
+                 	 player->name);
+            }
+      }
+       else if (property->owner == player_index) {
+
+   		 printf("%s already owns this property.\n",
+       		         player->name);
+	}
+	else {
+
+	    int rent =
+	        calculatePropertyRent(property);
+
+	    int owner_index = property->owner;
+
+	    printf("%s pays LKR %d rent to %s.\n",
+        	   player->name,
+        	   rent,
+        	   game->players[owner_index].name);
+
+	    player->cash -= rent;
+
+	    game->players[owner_index].cash += rent;
+	}
+	break;
+
+	case RAILWAY:
+{
+    int railway_index = space->railway_index;
+
+    struct Railway *railway =
+        &game->board.railways[railway_index];
+
+    if (railway->owner == -1) {
+
+        printf("Railway is unowned.\n");
+        printf("Price: LKR %d\n", railway->price);
+
+        if (player->cash >= railway->price) {
+
+            printf("%s buys %s for LKR %d.\n",
+                   player->name,
+                   railway->name,
+                   railway->price);
+
+            buyRailway(&game->board,
+                       player,
+                       player_index,
+                       railway_index);
+        }
+        else {
+            printf("%s cannot afford this railway.\n",
+                   player->name);
+        }
+    }
+    else if (railway->owner == player_index) {
+
+        printf("%s already owns this railway.\n",
+               player->name);
+    }
+    else {
+
+        int owner_index = railway->owner;
+
+        int rent =
+            calculateRailwayRent(
+                railway,
+                game->players[owner_index].railway_count
+            );
+
+        printf("%s pays LKR %d railway rent to %s.\n",
+               player->name,
+               rent,
+               game->players[owner_index].name);
+
+        player->cash -= rent;
+        game->players[owner_index].cash += rent;
+    }
+
+    break;
+}
+
+      
         case UTILITY:
-            printf("This is a utility.\n");
-            break;
+	{
+	    int utility_index = space->utility_index;
+	
+	    struct Utility *utility =
+	        &game->board.utilities[utility_index];
 
-        case TAX:
-            printf("This is a tax space.\n");
-            break;
+	    if (utility->owner == -1) {
 
-        case EVENT:
-            printf("This is an event space.\n");
-            break;
+	        printf("Utility is unowned.\n");
+	        printf("Price: LKR %d\n", utility->price);
+
+	        if (player->cash >= utility->price) {
+
+	            printf("%s buys %s for LKR %d.\n",
+	                   player->name,
+	                   utility->name,
+	                   utility->price);
+
+	            buyUtility(&game->board,
+	                       player,
+	                       player_index,
+	                       utility_index);
+	        }
+	        else {
+	            printf("%s cannot afford this utility.\n",
+	                   player->name);
+	        }
+	    }
+	    else if (utility->owner == player_index) {
+
+		    printf("%s already owns this utility.\n",
+		               player->name);
+	    }
+	    else {
+
+	        int owner_index = utility->owner;
+	
+	        int utility_count =
+	            game->players[owner_index].utility_count;
+
+	        int rent =
+	            calculateUtilityRent(
+	                utility,
+	                utility_count,
+	                game->last_dice_roll
+	            );
+
+	        printf("%s pays LKR %d utility rent to %s.\n",
+	               player->name,
+	               rent,
+	               game->players[owner_index].name);
+
+	        player->cash -= rent;
+	        game->players[owner_index].cash += rent;
+	    }
+	
+	    break;
+	}
+	
+
+	
+	case TAX:
+	{
+	    int tax = 2000;
+
+	    payTax(player, tax);
+
+	    break;
+	}
+	
 
         case JAIL:
             printf("This is Jail / Just Visiting.\n");

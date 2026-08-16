@@ -259,7 +259,7 @@ static void initializeRailways(struct Board *board)
 	for (int i = 0; i < MAX_RAILWAYS; i++) {
 		strcpy(board->railways[i].name, names[i]);
 
-		board->railways[i].price = 0;
+		board->railways[i].price = 1500;
 		board->railways[i].mortgage_value = 0;
 
 		board->railways[i].owner = -1;
@@ -287,56 +287,156 @@ static void initializeUtilities(struct Board *board)
 	}
 }
 
-int calculateRailwayRent(const struct Board *board, int player_index)
+
+
+
+int buyProperty(struct Board *board,
+                struct Player *player,
+                int player_index,
+                int property_index)
 {
-	int count = 0;
+    struct Property *property =
+        &board->properties[property_index];
 
-	for (int i = 0; i < MAX_RAILWAYS; i++) {
-		if (board->railways[i].owner == player_index) {
-			count++;
-		}
-	}
+    if (property->owner != -1) {
+        return 0;
+    }
 
-	switch (count) {
-		case 1:
-			return 250;
-		case 2: 
-			return 500;
-		case 3:
-			return 1000;
-		case 4:
-			return 2000;
-		default:
-			return 0;
-		}
+    if (player->cash < property->price) {
+        return 0;
+    }
+    
+    if (player->property_count >= MAX_PROPERTIES) {
+	    return 0;
+    }
+
+    player->cash -= property->price;
+
+    property->owner = player_index;
+
+    player->properties[player->property_count] =
+        property_index;
+
+    player->property_count++;
+
+    return 1;
 }
 
-int calculateUtilityRent(
-		const struct Board *board,
-		int player_index,
-		int dice_value
-		)
+int calculatePropertyRent(const struct Property *property)
 {
-	int count = 0;
+    if (property->mortgaged) {
+        return 0;
+    }
 
-	for (int i = 0; i < MAX_UTILITIES; i++) {
-		if (board->utilities[i].owner == player_index) {
-			count++;
-		}
-	}
+    return property->rent;
+}
 
-		if (count == 1) {
-			return 4 * dice_value;
-		}
+int buyRailway(struct Board *board,
+               struct Player *player,
+               int player_index,
+               int railway_index)
+{
+    struct Railway *railway =
+        &board->railways[railway_index];
 
-		if (count == 2) {
-			return 10 * dice_value;
-		}
+    if (railway->owner != -1) {
+        return 0;
+    }
 
-		return 0;
+    if (player->cash < railway->price) {
+        return 0;
+    }
 
-	} 
+    if (player->railway_count >= MAX_PROPERTIES) {
+        return 0;
+    }
+
+    player->cash -= railway->price;
+
+    railway->owner = player_index;
+
+    player->railways[player->railway_count] =
+        railway_index;
+
+    player->railway_count++;
+
+    return 1;
+}
+
+int calculateRailwayRent(const struct Railway *railway,
+                         int railway_count)
+{
+    if (railway->mortgaged) {
+        return 0;
+    }
+
+    if (railway_count == 1) {
+        return railway->rent;
+    }
+
+    if (railway_count == 2) {
+        return railway->rent * 2;
+    }
+
+    if (railway_count == 3) {
+        return railway->rent * 4;
+    }
+
+    if (railway_count >= 4) {
+        return railway->rent * 8;
+    }
+
+    return 0;
+}
 
 
+int buyUtility(struct Board *board,
+               struct Player *player,
+               int player_index,
+               int utility_index)
+{
+    struct Utility *utility =
+        &board->utilities[utility_index];
 
+    if (utility->owner != -1) {
+        return 0;
+    }
 
+    if (player->cash < utility->price) {
+        return 0;
+    }
+
+    if (player->utility_count >= MAX_PROPERTIES) {
+        return 0;
+    }
+
+    player->cash -= utility->price;
+
+    utility->owner = player_index;
+
+    player->utilities[player->utility_count] =
+        utility_index;
+
+    player->utility_count++;
+
+    return 1;
+} 
+
+int calculateUtilityRent(const struct Utility *utility,
+                         int utility_count,
+                         int dice_roll)
+{
+    if (utility->owner == -1 ) {
+        return 0;
+    }
+
+    if (utility_count == 1) {
+	    return dice_roll * 4;
+    }
+
+    if (utility_count >= 2) {
+        return dice_roll * 10;
+    }
+
+    return dice_roll * 4;
+}

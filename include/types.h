@@ -144,6 +144,8 @@ struct Game {
     int current_player;
 
     int round;
+
+    int last_dice_roll;
 };
 
 #endif

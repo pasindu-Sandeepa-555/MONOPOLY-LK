@@ -7,13 +7,17 @@ void initializeBoard(struct Board *board);
 
 void printBoard(const struct Board *board);
 
-int calculateRailwayRent(const struct Board *board, int player_index);
+int buyProperty(struct Board *board, struct Player *player,int player_index, int property_index);
 
-int calculateUtilityRent(
-		const struct Board *board,
-		int player_index,
-		int dice_value
-		);
+int calculatePropertyRent(const struct Property *property);
+
+int buyRailway(struct Board *board, struct Player *player, int player_index, int railway_index);
+
+int calculateRailwayRent(const struct Railway *railway, int railway_count);
+
+int buyUtility(struct Board *board, struct Player *player, int player_index, int utility_index);
+
+int calculateUtilityRent(const struct Utility *utility, int utility_count, int dice_roll);
 
 
 #endif
